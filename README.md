@@ -31,26 +31,19 @@ The classification logic lives in a pure, I/O-free state machine (`src/runtime/g
 * Rust toolchain (build-time only — there are **no** C library dependencies; the program speaks evdev/uinput directly)
 * `uinput` kernel module
 * read access to `/dev/input` (user in the `input` group) and write access to `/dev/uinput` (udev rule included)
-* a systemd user session for the provided unit, or an OpenRC user-service setup if using the provided OpenRC service
+* a systemd user session for the provided unit (any init works if you start the binary yourself)
 
 Wayland and X11 are both fine; the proxy operates below the display server. Developed and tuned on a MacBookPro11,3 (bcm5974 touchpad) running CachyOS + KDE Plasma Wayland.
 
 ## Installation
 
-### systemd
 Automated (installs udev rule, adds you to `input`, builds, installs binary + config + systemd user unit):
 
 ```bash
 sudo ./install.sh
 ```
-### openrc
-Automated (installs udev rule, adds you to `input`, builds, installs binary + config + openrc user unit):
 
-```bash
-sudo ./install-openrc.sh
-```
-
-## Manual:
+Manual:
 
 ```bash
 # 1. permissions
@@ -64,24 +57,12 @@ sudo modprobe uinput
 cargo build --release
 sudo cp target/release/linux-3-finger-drag /usr/bin/
 
-# 3. config
-mkdir -p ~/.config/linux-3-finger-drag 
+# 3. config + service
+mkdir -p ~/.config/linux-3-finger-drag
 cp 3fd-config.json ~/.config/linux-3-finger-drag/
-```
-
-### systemd
-```bash 
 mkdir -p ~/.config/systemd/user
 cp three-finger-drag.service ~/.config/systemd/user/
 systemctl --user enable --now three-finger-drag.service
-```
-### openrc
-```bash
-mkdir -p ~/.config/rc/init.d
-cp three-finger-drag ~/.config/rc/init.d/three-finger-drag
-chmod +x ~/.config/rc/init.d/three-finger-drag
-rc-update --user add three-finger-drag default
-rc-service --user three-finger-drag start
 ```
 
 Test in the foreground first if you're changing code: `./target/release/linux-3-finger-drag` (Ctrl-C to quit — the touchpad returns to normal the moment the process exits).
@@ -122,7 +103,7 @@ The integration test creates a **fake touchpad** via uinput, points the real bin
 
 If the fixes here and in the Issues section of the repo don't address your issue, please open a new issue!
 
-* **Touchpad dead while the program runs?** The proxy has the device grabbed but something is failing after that. Check the service logs — for systemd, use `journalctl --user -u three-finger-drag.service -e`; for OpenRC, check the output/logging configured for your OpenRC user service — and note the touchpad always returns the instant the process exits.
+* **Touchpad dead while the program runs?** The proxy has the device grabbed but something is failing after that. Check `journalctl --user -u three-finger-drag.service -e` — and note the touchpad always returns the instant the process exits.
 * **"You are not yet allowed to write to /dev/uinput"** — udev rule not applied, or you haven't logged out and back in since being added to the `input` group.
 * **Drag feels too slow/fast** — tune `acceleration`; it multiplies a baseline of 12 px per mm of finger travel.
 * **KDE gestures still firing on 3 fingers?** Then the compositor is reading the *real* touchpad, not the clone — the service probably isn't running.

@@ -113,17 +113,31 @@ echo -e "[\e[0;32m DONE \e[0m]"
 
 # 7b. Installing SystemD service
 # If using SystemD as the init system
-echo -n "Installing/enabling OpenRC user unit...        "
-if [ -d /run/openrc ]; then
+if ps -p 1 | grep -q systemd; then
 
     # define user-level service
     # made as non-root user
     # shellcheck disable=SC2016  # $HOME must expand in the TARGET user's shell
+    echo -n "Installing/enabling SystemD user unit...        "
     su "$SUDO_USER" -c '\
-        mkdir -p "$HOME"/.config/rc/init.d \
-        cp three-finger-drag.service $HOME/.config/rc/init.d \
-	rc-update add three-finger-drag
-        rc-service --user three-finger-drag start'
+        mkdir -p "$HOME"/.config/systemd/user; \
+        cp three-finger-drag.service $HOME/.config/systemd/user/; \
+        systemctl --user enable --now three-finger-drag.service '
+    echo -e "[\e[0;32m DONE \e[0m]"
+
+elif [ -d /run/openrc ]; then
+
+    # define user-level service
+    # made as non-root user
+    # shellcheck disable=SC2016  # $HOME must expand in the TARGET user's shell
+    echo -n "Installing/enabling OpenRC user unit...        "
+    su "$SUDO_USER" -c '    
+        mkdir -p "$HOME/.config/rc/init.d"
+        cp three-finger-drag "$HOME/.config/rc/init.d/three-finger-drag"
+        chmod +x "$HOME/.config/rc/init.d/three-finger-drag"
+	    rc-update --user add three-finger-drag default
+        rc-service --user three-finger-drag start
+    '
     echo -e "[\e[0;32m DONE \e[0m]"
 
 else
