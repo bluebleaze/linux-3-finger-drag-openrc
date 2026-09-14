@@ -109,9 +109,9 @@ su "$SUDO_USER" -c '\
 echo -e "[\e[0;32m DONE \e[0m]"
 
 
-# (7a. KDE Autostart needs to be configured through GUI)
+# (6a. KDE Autostart needs to be configured through GUI)
 
-# 7b. Installing SystemD service
+# 6b. Installing SystemD service
 # If using SystemD as the init system
 if ps -p 1 | grep -q systemd; then
 
@@ -153,7 +153,7 @@ else
         probably starting with OpenRC. Also, feel free to submit a pull request for this.)"
 fi
 
-## 6. Reboot
+## 7. Reboot
 echo
 echo "This installation requires a reboot to complete (for the group modification)."
 echo
