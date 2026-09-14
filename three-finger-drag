@@ -1,0 +1,21 @@
+#!/sbin/openrc-run
+name="linux-3-finger-drag"
+description="Three-finger drag gestures for Linux"
+# The proxy owns the real touchpad for its whole lifetime; if it dies the
+# touchpad has no reader, so restart promptly. It survives touchpad
+# re-enumeration internally (in-process rediscovery); Restart= is the
+# backstop for everything else.
+
+# Use supervise-daemon to handle backgrounding and auto-restarts
+supervisor="supervise-daemon"
+command="/usr/bin/linux-3-finger-drag"
+
+# Restart configuration (equivalent to RestartSec=1)
+respawn_delay=1
+
+depend() {
+    # Start after the display manager has started.
+    # OpenRC has no direct equivalent of systemd's
+    # graphical-session.target in this user-service setup.
+    after display-manager
+}

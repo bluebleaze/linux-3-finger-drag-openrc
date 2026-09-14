@@ -49,8 +49,11 @@ gpasswd --add "$SUDO_USER" input > /dev/null
 ## Not necessary on Ubuntu-based distros,
 ## But essential on Arch (and probably more minimal distros too), 
 ## and does no harm on other distros
-echo "uinput" > /etc/modules-load.d/uinput.conf
-modprobe uinput
+## Checking if the module is already loaded, and if not, load it
+mkdir -p /etc/modules-load.d
+if ! grep -qxF "uinput" /etc/modules-load.d/uinput.conf 2>/dev/null; then
+    echo "uinput" >> /etc/modules-load.d/uinput.conf
+fi
 
 echo -e "[\e[0;32m DONE \e[0m]"
 
@@ -111,25 +114,29 @@ echo -e "[\e[0;32m DONE \e[0m]"
 
 # (7a. KDE Autostart needs to be configured through GUI)
 
-# 7b. Installing SystemD service
-# If using SystemD as the init system
-echo -n "Installing/enabling SystemD user unit...        "
-if ps -p 1 | grep -q systemd; then
+# 7b. Installing OpenRC service
+# If using OpenRC as the init system
+echo -n "Installing/enabling OpenRC user unit...        "
+if [ -d /run/openrc ]; then
 
     # define user-level service
     # made as non-root user
     # shellcheck disable=SC2016  # $HOME must expand in the TARGET user's shell
-    su "$SUDO_USER" -c '\
-        mkdir -p "$HOME"/.config/systemd/user; \
-        cp three-finger-drag.service $HOME/.config/systemd/user/; \
-        systemctl --user enable --now three-finger-drag.service '
+    su "$SUDO_USER" -c '    
+        mkdir -p "$HOME/.config/rc/init.d"
+        cp three-finger-drag "$HOME/.config/rc/init.d/three-finger-drag"
+        chmod +x "$HOME/.config/rc/init.d/three-finger-drag"
+	    rc-update --user add three-finger-drag default
+        rc-service --user three-finger-drag start
+    '
     echo -e "[\e[0;32m DONE \e[0m]"
 
 else
     echo -e "[\e[0;33m WARN \e[0m]"
-    echo -e "\n\e[0;33mWarning: Your system doesn't use SystemD.\e[0m"
-    echo-mls "Currently, only SystemD installation is automated by this install script, \
-        so you'll have to use create and enable the service for your init system."
+    echo -e "\n\e[0;33mWarning: Your system doesn't use OpenRC.\e[0m"
+    echo-mls "Currently, only Openrc installation is automated by this install script, \
+        so you'll have to use create and enable the service for your init system. 
+        you the .service one for systemd version of the script"
     echo
     echo "You may also have to ensure that the uinput kernel module loads on boot."
     echo "The config has been added in /etc/modules-load.d/uinput.conf."
